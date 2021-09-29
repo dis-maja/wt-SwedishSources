@@ -1,2 +1,2 @@
 # wt-SwedishSources
-webtrees addon Swedish Sources
+webtrees custom module to add Swedish chuch books to a tree.
