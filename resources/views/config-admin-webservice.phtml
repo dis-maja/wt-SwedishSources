@@ -1,0 +1,83 @@
+<?php
+
+use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
+use Fisharebest\Webtrees\Http\RequestHandlers\ModulesAllPage;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Tree;
+use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Database\Query\Expression;
+
+/**
+ * @var string		    $module
+ * @var int		    $tree_id
+ * @var <int,string>	    $tab_info
+ * @var string		    $cancel
+ * @var string		    $user
+ * @var string		    $pass
+ * @var string		    $url
+ */
+
+?>
+<h2><?= $tab_info[1] . ' - ' . I18N::translate('Preferences') ?></h2>
+
+<form method="post">
+    <input type="hidden" name="save" value="1">
+    <?= csrf_field() ?>
+    <input type="hidden" name="tree" value="<?= $tree_id ?>">
+    <input type="hidden" name="tab" value="<?= $tab_info[0] ?>">
+    <input type="hidden" name="ouser" value="<?= $user ?>">
+    <input type="hidden" name="opass" value="<?= $pass ?>">
+    <input type="hidden" name="ourl" value="<?= $url ?>">
+
+    <fieldset class="form-group">
+	<div class="row">
+	    <legend class="col-form-label col-sm-3">
+		<label for="user">
+		    <?= I18N::translate('Username') ?>
+		</label>
+	    </legend>
+	    <div class="col-sm-9">
+		<input class="form-control" id="user" name="user" type="text" value="<?= e($user) ?>">
+	    </div>
+	</div>
+    </fieldset>
+
+    <fieldset class="form-group">
+	<div class="row">
+	    <legend class="col-form-label col-sm-3">
+		<label for="pass">
+		    <?= I18N::translate('Password') ?>
+		</label>
+	    </legend>
+	    <div class="col-sm-9">
+		<input class="form-control" id="pass" name="pass" type="text" value="<?= e($pass) ?>">
+	    </div>
+	</div>
+    </fieldset>
+
+    <fieldset class="form-group">
+	<div class="row">
+	    <legend class="col-form-label col-sm-3">
+		<label for="url">
+		    <?= I18N::translate('URL') ?>
+		</label>
+	    </legend>
+	    <div class="col-sm-9">
+		<input class="form-control" id="url" name="url" type="text" value="<?= e($url) ?>">
+	    </div>
+	</div>
+    </fieldset>
+
+    <div class="row form-group">
+	<div class="offset-sm-3 col-sm-9">
+	    <button type="submit" class="btn btn-primary">
+		<?= view('icons/save') ?>
+		<?= I18N::translate('save') ?>
+	    </button>
+	    <a class="btn btn-secondary" href="<?= e($cancel) ?>">
+		<?= view('icons/cancel') ?>
+		<?= I18N::translate('cancel') ?>
+	    </a>
+	</div>
+    </div>
+</form>

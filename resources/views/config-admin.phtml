@@ -1,0 +1,286 @@
+<?php
+
+/**
+ *
+ * Copyright (c) 2021, Mats O Jansson <maja@dis-maja.se>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *   this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+
+declare(strict_types=1);
+
+use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
+use Fisharebest\Webtrees\Http\RequestHandlers\ModulesAllPage;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Tree;
+use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Database\Query\Expression;
+
+/**
+ * @var string		$title
+ * @var string		$module
+ * @var Tree|null	$tree
+ * @var array<Tree>	$trees
+ * @var bool		$admin
+ */
+
+    const TAB_REPOSITORY = 1;
+    const TAB_COUNTY = 2;
+    const TAB_BOOKTYPE = 3;
+    const TAB_WEBSERVICE = 4;
+
+    $tabs = [ TAB_REPOSITORY	=> I18N::translate('Repository'),
+	      TAB_COUNTY	=> I18N::translate('County'),
+	      TAB_BOOKTYPE	=> I18N::translate('Book type'),
+	      TAB_WEBSERVICE	=> I18N::translate('Webservice') ];
+
+    $booktypes = [ 0 => 'Choose book type',
+    		   1 => 'Church books',
+		   2 => 'SCB Extracts from Church Books 1860-1949',
+		 ];
+
+    if ($admin == true) {
+
+	// Call from getAdminAction
+?>
+<?= view('components/breadcrumbs', ['links' => [route(ControlPanel::class) => I18N::translate('Control panel'), route(ModulesAllPage::class) => I18N::translate('Modules'), $title]]) ?>
+<?php
+    }
+
+    $user = trim(getPreference($module, 'USER', ''));
+    $pass = trim(getPreference($module, 'PASS', ''));
+    $url  = trim(getPreference($module, 'URL', ''));
+
+    $force = ($user == '' || $pass == '' || $url == '');
+
+    if ($admin == true) {
+
+	if ($tree == null) {
+	    $tree_id = 0;
+	    if (isset($_REQUEST['tree_id'])) {
+		$tree_id = $_REQUEST['tree_id'];
+	    }
+	} else {
+	    $tree_id = $tree->id();
+	}
+
+	$tree_names[0] = I18N::translate('Choose Family tree');
+	foreach($trees as $t) {
+	    $tree_names[$t->id()] = $t->name();
+	    $tree = $t;
+	}
+
+?>
+<h1><?= $title ?></h1>
+
+<form method="post" class="form-inline mb-4">
+    <?= csrf_field() ?>
+
+    <input type="hidden" name="otree_id" value="<?= $tree_id ?>">
+    
+    <label for="tree_id" class="sr-only">
+	<?= I18N::translate('Family tree') ?>
+    </label>
+
+    <?= view('components/select', [ 'name' => 'tree_id',
+				    'selected' => $tree_id,
+				    'options' => $tree_names]); ?>
+
+    <button type="submit" class="btn btn-primary">
+	<?= I18N::translate('show') ?>
+    </button>
+</form>
+<?php
+    } else {
+	$tree_id = $tree->id();
+    }
+
+    if ($tree_id == 0) {
+	return;
+    }
+
+    if ($force) {
+	$ftabs = [ TAB_WEBSERVICE => $tabs[TAB_WEBSERVICE] ];
+	$tab = TAB_WEBSERVICE;
+?>
+    <?= view($module . '::config-admin-tabs',
+	     [ 'module'  => $module,
+	       'tree_id' => $tree_id,
+	       'tabs'	 => $ftabs,
+	       'tab'	 => $tab ]); ?>
+<?php
+    } else {
+?>
+    <?= view($module . '::config-admin-tabs',
+	     [ 'module'   => $module,
+	       'tree_id'  => $tree_id,
+	       'tabs'	  => $tabs,
+	       'tab'	  => $tab ]); ?>
+<?php
+    }
+
+    if ($tab == TAB_REPOSITORY) {
+	$cancel = '';
+
+	$x = json_decode(curlGet($url . '?do=getREPO', $user, $pass));
+
+	$repo_arr = array();
+	if (count((array) $x) > 0) {
+	    foreach($x as $key => $val) {
+		$y = DB::table('other')
+			  ->where('o_file', '=', $tree->id())
+			  ->where('o_type', '=', 'REPO')
+			  ->where('o_gedcom', 'LIKE', '%RIN ' . $key . '%')
+			  ->select('o_id')
+			  ->get();
+		$repo_arr[] = [ 'info'	=> $val,
+				'rin'	=> $key,
+				'id'	=> isset($y[0]->o_id) ?
+				    $y[0]->o_id : '' ];
+	    }
+	}
+	$z = '';
+?>
+    <?= view($module . '::config-admin-repository',
+	     [ 'module'     => $module,
+	       'tree_id'    => $tree_id,
+	       'tree_name'  => $tree_names[$tree_id],
+	       'tab_info'   => [ $tab, $tabs[$tab] ],
+	       'cancel'	    => $cancel,
+	       'repo_arr'   => $repo_arr,
+	       'z'	    => $z]); ?>
+<?php
+    }
+
+    if ($tab == TAB_COUNTY) {
+	$cancel = '';
+
+	$x = json_decode(curlGet($url . '?do=getCounty', $user, $pass));
+
+	$county_arr = array();
+	if (count((array) $x) > 0) {
+	    foreach($x as $key => $val) {
+		$y = DB::table('swedish_sources')
+			  ->where('gid',  $tree->id())
+			  ->where('type', 'COUNTY')
+			  ->where('rin',  (string) $val->bdbCTid)
+			  ->select('id', 'rin', 'nothidden')
+			  ->get();
+		$county_arr[] = [ 'rin'		=> $val->bdbCTid,
+				  'id'		=> isset($y[0]->id) ?
+				      (string) $y[0]->id : '',
+				  'nothidden'	=> isset($y[0]->nothidden) ?
+				      (string) $y[0]->nothidden : '',
+				  'info'	=> $val->bdbCTname ];
+	    }
+	}
+	$z = '';
+?>
+    <?= view($module . '::config-admin-county',
+	     [ 'module'	    => $module,
+	       'tree_id'    => $tree_id,
+	       'tree_name'  => $tree_names[$tree_id],
+	       'tab_info'   => [ $tab, $tabs[$tab] ],
+	       'cancel'	    => $cancel,
+	       'county_arr' => $county_arr,
+	       'z'	    => $z]); ?>
+<?php
+    }
+
+    if ($tab == TAB_BOOKTYPE) {
+	$cancel = '';
+
+	$btype_arr = array();
+	if (count((array) $booktypes) > 0) {
+	    foreach($booktypes as $key => $val) {
+		$y = DB::table('swedish_sources')
+			  ->where('gid',  '=', $tree_id)
+			  ->where('type', '=', 'BTYPE')
+			  ->where('rin',  '=', (string) $key)
+			  ->select('id', 'rin', 'nothidden')
+			  ->get();
+		$btype_arr[] = [ 'rin'		=> $key,
+				 'id'		=> isset($y[0]->id) ?
+				     (string) $y[0]->id : '',
+				 'nothidden'	=> isset($y[0]->nothidden) ?
+				     (string) $y[0]->nothidden : '',
+				 'info'		=> $val ];
+	    }
+	}
+	$z = $btype_arr;
+?>
+    <?= view($module . '::config-admin-booktypes',
+	     [ 'module'	    => $module,
+	       'tree_id'    => $tree_id,
+	       'tree_name'  => $tree_names[$tree_id],
+	       'tab_info'   => [ $tab, $tabs[$tab] ],
+	       'cancel'	    => $cancel,
+	       'btype_arr'  => $btype_arr ]); ?>
+<?php
+    }
+
+    if ($tab == TAB_WEBSERVICE) {
+	$cancel = '';
+?>
+    <?= view($module . '::config-admin-webservice',
+	     [ 'module'	  => $module,
+	       'tree_id'  => $tree_id,
+	       'tab_info' => [ $tab, $tabs[$tab] ],
+	       'cancel'	  => $cancel,
+	       'user'	  => $user,
+	       'pass'	  => $pass,
+	       'url'	  => $url ]); ?>
+<?php
+    }
+
+    function curlGet($url, $user = NULL, $pass = NULL): string {
+
+	$ch = curl_init();
+	$timeout = 5;
+	curl_setopt($ch, CURLOPT_URL, $url) or die(curl_error());
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1) or die(curl_error());
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout) or die(curl_error());
+	if ($user != NULL AND $pass != NULL) {
+	    curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC) or die(curl_error());
+	    curl_setopt($ch, CURLOPT_USERPWD, $user . ':' . $pass) or die(curl_error());
+	}
+	$data = curl_exec($ch) or die(curl_error($ch)) or die(curl_error());;
+	curl_close($ch);
+	return $data;
+
+    }
+
+    function getPreference(string $name, string $setting_name, string $default = ''): string
+    {
+	return DB::table('module_setting')
+	    ->where('module_name', '=', $name)
+	    ->where('setting_name', '=', $setting_name)
+	    ->value('setting_value') ?? $default;
+    }
+

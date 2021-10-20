@@ -1,0 +1,78 @@
+<?php
+
+use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
+use Fisharebest\Webtrees\Http\RequestHandlers\ModulesAllPage;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Tree;
+use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Database\Query\Expression;
+
+/**
+ * @var string		    $module
+ * @var int		    $tree_id
+ * @var <int,string>	    $tab_info
+ * @var string		    $url
+ */
+
+print_r($z);
+?>
+<h2><?= $tab_info[1] . ' - ' . I18N::translate('Preferences') ?></h2>
+
+<form method="post">
+    <input type="hidden" name="save" value="1">
+    <?= csrf_field() ?>
+    <input type="hidden" name="tree" value="<?= $tree_id ?>">
+    <input type="hidden" name="tab" value="<?= $tab_info[0] ?>">
+    <table
+	class="table table-bordered table-sm wt-table-county datatables d-none"
+	<?= view('lists/datatables-attributes') ?>
+	data-paging=false data-filter=false data-info=false>
+	<thead>
+	    <tr>
+		<th><?= I18N::translate('County') ?></th>
+		<th class="col-sm-3"><?= I18N::translate('bookDB RIN') ?></th>
+		<th class="col-sm-3"><?= I18N::translate('Id (in %s)', $tree_name) ?></th>
+	    </tr>
+	</thead>
+	<tbody>
+<?php
+    $i = 0;
+    foreach($county_arr as $value) {
+	$i++;
+	$field = "county[" . $i . "]";
+	$label = I18N::translate('Add county');
+	$info = I18N::translate($value['info']);
+?>
+	    <tr>
+		<td data-sort="<?= $info ?>"><?= $info ?></td>
+		<td data-sort="<?= $value['rin'] ?>"><?= $value['rin'] ?></td>
+<?php
+	if ($value['id'] == '') {
+?>
+	    <td><?= view('components/checkbox', ['label' => $label, 'name' => $field, 'checked' => (bool) 0, 'value' => $value['rin']]) ?></td>
+<?php
+	} else {
+?>
+	    <td><?= $value['rin'] ?></td>
+<?php
+	}
+?>
+	    </tr>
+<?php
+    }
+?>
+	</tbody>
+    </table>
+    <div class="row form-group">
+	<div class="offset-sm-3 col-sm-9">
+	    <button type="submit" class="btn btn-primary">
+		<?= view('icons/save') ?>
+		<?= I18N::translate('save') ?>
+	    </button>
+	    <a class="btn btn-secondary" href="<?= e($cancel) ?>">
+		<?= view('icons/cancel') ?>
+		<?= I18N::translate('cancel') ?>
+	    </a>
+	</div>
+    </div>
+</form>

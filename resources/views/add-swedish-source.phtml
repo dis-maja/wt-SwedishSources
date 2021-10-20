@@ -1,0 +1,248 @@
+<?php
+
+use DISMaja\Webtrees\Module\SwedishSources\SwedishSourcesModule;
+use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesBtype;
+use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesCounty;
+use Fisharebest\Webtrees\Auth;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Tree;
+use Fisharebest\Webtrees\View;
+use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Database\Query\Expression;
+use Ramsey\Uuid\Uuid;
+
+/**
+ * @var array		$btypes
+ * @var array		$books
+ * @var string		$parish
+ * @var <int,string>	$parishes
+ * @var string		$county
+ * @var <int,string>	$counties
+ * @var string		$btype
+ * @var <int,string>	$booktype
+ * @var string		$cancel
+ * @var string		$name
+ * @var string		$title
+ * @var Tree		$tree
+ */
+
+const FIELD_BOOKTYPE = 1;
+const FIELD_COUNTIES = 2;
+const FIELD_PARISHES = 3;
+const FIELD_BOOKS = 4;
+
+$fields = array();
+
+$url = "";
+
+if (isset($booktype)) {
+    $fields[] = FIELD_BOOKTYPE;
+    if (!isset($btype)) {
+	$tmp = array_keys($booktype);
+	$btype = $tmp[0];
+    }
+}
+
+if (isset($counties)) {
+   $fields[] = FIELD_COUNTIES;
+   if (!isset($county)) {
+	$tmp = array_keys($counties);
+	$county = $tmp[0];
+   }
+}
+
+if (isset($parishes)) {
+   $fields[] = FIELD_PARISHES;
+   if (!isset($parish)) {
+	$tmp = array_keys($parishes);
+	$parish = $tmp[0];
+   }
+}
+
+if (isset($books)) {
+   $fields[] = FIELD_BOOKS;
+}
+
+?>
+<h2 class="wt-page-title"><?= $title ?></h2>
+
+<form method="POST" action="<?= $url ?>">
+    <?= csrf_field() ?>
+
+<?php
+    if (in_array(FIELD_BOOKTYPE, $fields)) {
+	$BtypeId = 'btype' . Uuid::uuid4()->toString();
+
+	if (count($booktype) == 1) {
+?>
+    <input type="hidden" name="btype" value="<?= $btype ?>">
+<?php
+	}
+?>
+    <input type="hidden" name="obtype" value="<?= $btype ?>">
+    <div class="row form-group">
+	<label class="col-sm-3 col-form-label" for="<?= $BtypeId ?>">
+	    <?= I18N::translate('Book type') ?>
+	</label>
+	<div class="col-sm-9">
+<?php
+	if (count($booktype) == 1) {
+	    $tmp = array_keys($booktype);
+?>
+	    <input class="form-control" type="text" id="<? $BtypeId ?>" value="<?= $booktype[$tmp[0]] ?>" disabled>
+<?php
+	} else {
+?>
+	    <select class="form-control select" id)"<?= $BtypeId ?>" name="btype" onchange="this.form.submit()">
+<?php
+	    foreach($booktype as $key => $val) {
+		if ($key == $btype) {
+		    $tmp = " selected";
+		} else {
+		    $tmp = "";
+		}
+?>
+		<option value="<?= $key ?>"<?= $tmp ?>><?= $val ?></option>
+<?php
+	    }
+?>
+	    </select>
+<?php
+	}
+?>
+	</div>
+    </div>
+<?php
+    }
+
+    if (in_array(FIELD_COUNTIES, $fields)) {
+	$CountyId = 'county' . Uuid::uuid4()->toString();
+?>
+    <input type="hidden" name="ocounty" value="<?= $county ?>">
+    <div class="row form-group">
+	<label class="col-sm-3 col-form-label" for="<?= $CountyId ?>">
+	    <?= I18N::translate('County') ?>
+	</label>
+	<div class="col-sm-9">
+	    <select class="form-control select" id)"<?= $CountyId ?>" name="county" onchange="this.form.submit()">
+<?php
+	    foreach($counties as $key => $val) {
+		if ($key == $county) {
+		    $tmp = " selected";
+		} else {
+		    $tmp = "";
+		}
+?>
+		<option value="<?= $key ?>"<?= $tmp ?>><?= $val ?></option>
+<?php
+	    }
+?>
+	    </select>
+	</div>
+    </div>
+<?php
+    }
+
+    if (in_array(FIELD_PARISHES, $fields)) {
+	$ParishId = 'parish' . Uuid::uuid4()->toString();
+?>
+    <input type="hidden" name="oparish" value="<?= $parish ?>">
+    <div class="row form-group">
+	<label class="col-sm-3 col-form-label" for="<?= $ParishId ?>">
+	    <?= I18N::translate('Parish') ?>
+	</label>
+	<div class="col-sm-9">
+	    <select class="form-control select" id)"<?= $ParishId ?>" name="parish" onchange="this.form.submit()">
+<?php
+	    foreach($parishes as $key => $val) {
+		if ($key == $parish) {
+		    $tmp = " selected";
+		} else {
+		    $tmp = "";
+		}
+?>
+		<option value="<?= $key ?>"<?= $tmp ?>><?= $val ?></option>
+<?php
+	    }
+?>
+	    </select>
+	</div>
+    </div>
+<?php
+    }    
+
+    if (in_array(FIELD_BOOKS, $fields)) {
+
+	$bt = get_object_vars($btypes);
+?>
+    <table class="table table-bordered table-sm" style="border-collapse: collapse;">
+	<thead class="thead-light">
+	    <tr>
+		<th><?= I18N::translate('Church books') ?></th>
+		<th><?= I18N::translate('bookDB RIN') ?></th>
+		<th><?= I18N::translate('Id (in %s)',$tree->name()) ?></th> 
+	    </tr>
+	</thead>
+	<tbody>
+<?php
+	$oldBTid = 0;
+	$label = I18N::translate('Add');
+	$i = 0;
+	foreach($books as $val) {
+	    $tmp = get_object_vars($val);
+	    if ($tmp['nadBTid'] != $oldBTid) {
+		$oldBTid = $tmp['nadBTid'];
+?>
+		<tr>
+		    <td colspan="3"><b><?= $bt[$oldBTid] ?></b></td>
+		</tr>
+<?php
+	    }
+	    $y = DB::table('sources')
+		      ->where('s_file', '=', $tree->id())
+		      ->where('s_gedcom', 'LIKE', '%RIN ' . $tmp['rin'] . '%')
+		      ->select('s_id')
+		      ->get();
+
+	    $id = ($tmp['nadBTidSpec'] != 0) ? $tmp['nadBTidSpec'] : $tmp['nadBTid'];
+?>
+		<tr>
+		    <td><?= $bt[$id] . ' ' . $tmp['nadBKperiod'] . ' (' . $tmp['bdbBKsignum'] . ')' ?></td>
+		    <td><?= $tmp['rin'] ?></td>
+<?php
+	    if (count($y) > 0) {
+?>
+		    <td><?= $y[0]->s_id ?></td>
+<?php
+	    } else {
+?>
+		    <td><?= view('components/checkbox', ['label' => $label, 'name' => 'sour[' . $i . ']', 'checked' => (bool) 0, 'value' => $tmp['rin']]) ?></td>
+<?php
+		$i++;
+	    }
+?>
+		</tr>
+<?php
+	}
+?>
+	</tbody>
+    </table>
+<?php
+
+    }
+?>
+    <div class="row form-group">
+	<div class="col-sm-12">
+	  <div class="float-right">
+	    <button type="submit" class="btn btn-primary">
+	        <?= view('icons/save') ?>
+                <?= I18N::translate('save') ?>
+   	    </button>
+            <a class="btn btn-secondary" href="<?= e($cancel) ?>">
+                <?= view('icons/cancel') ?>
+                <?= I18N::translate('cancel') ?>
+            </a>
+	  </div>
+	</div>
+    </div>
+</form>

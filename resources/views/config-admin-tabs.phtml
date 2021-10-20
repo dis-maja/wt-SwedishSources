@@ -1,0 +1,32 @@
+<?php
+
+use Fisharebest\Webtrees\Http\RequestHandlers\ControlPanel;
+use Fisharebest\Webtrees\Http\RequestHandlers\ModulesAllPage;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Tree;
+
+/**
+ * @var string		    $module
+ * @var int		    $tree_id
+ * @var array<int,string>   $tabs
+ * @var int		    $tab
+ */
+
+?>
+<div class="form-inline mb-2">
+<?php
+    foreach($tabs as $key => $value) {
+	$extra = ($key != $tab) ? '' : ' btn disable';
+	$url = route('module', ['module'    => $module,
+				'action'    => 'Admin',
+				'tree_id'   => $tree_id,
+				'tab'	    => $key]);
+	$href = ($key != $tab) ? ' href="' . $url . '"' : '';
+?>
+    <div class="form-control<?= $extra ?>">
+	<a class="tablink"<?= $href ?> style="text-decoration: none;"><?= $value ?></a>
+    </div>
+<?php
+    }
+?>
+</div>
