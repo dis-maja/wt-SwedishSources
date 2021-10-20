@@ -154,7 +154,7 @@ use Illuminate\Database\Query\Expression;
 	if (count((array) $x) > 0) {
 	    foreach($x as $key => $val) {
 		$y = DB::table('other')
-			  ->where('o_file', '=', $tree->id())
+			  ->where('o_file', '=', $tree_id)
 			  ->where('o_type', '=', 'REPO')
 			  ->where('o_gedcom', 'LIKE', '%RIN ' . $key . '%')
 			  ->select('o_id')
@@ -187,7 +187,7 @@ use Illuminate\Database\Query\Expression;
 	if (count((array) $x) > 0) {
 	    foreach($x as $key => $val) {
 		$y = DB::table('swedish_sources')
-			  ->where('gid',  $tree->id())
+			  ->where('gid',  $tree_id)
 			  ->where('type', 'COUNTY')
 			  ->where('rin',  (string) $val->bdbCTid)
 			  ->select('id', 'rin', 'nothidden')
