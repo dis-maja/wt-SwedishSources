@@ -51,12 +51,14 @@ if (isset($counties)) {
    }
 }
 
-if (isset($parishes)) {
-   $fields[] = FIELD_PARISHES;
-   if (!isset($parish)) {
-	$tmp = array_keys($parishes);
-	$parish = $tmp[0];
-   }
+if (!(isset($parish) && $parish == "scb")) {
+    if (isset($parishes)) {
+	$fields[] = FIELD_PARISHES;
+	if (!isset($parish)) {
+	    $tmp = array_keys($parishes);
+	    $parish = $tmp[0];
+	}
+    }
 }
 
 if (isset($books)) {
@@ -174,13 +176,24 @@ if (isset($books)) {
     if (in_array(FIELD_BOOKS, $fields)) {
 
 	$bt = get_object_vars($btypes);
+
+	$bt_name = 'Church books';
+
+	if ($btype == 2) {
+	    $bt_name = 'SCB Extracts';
+?>
+    <input type="hidden" name="oparish" value="scb">
+    <input type="hidden" name="parish" value="scb">
+<?php
+	}
+
 ?>
     <table class="table table-bordered table-sm" style="border-collapse: collapse;">
 	<thead class="thead-light">
 	    <tr>
-		<th><?= I18N::translate('Church books') ?></th>
-		<th><?= I18N::translate('bookDB RIN') ?></th>
-		<th><?= I18N::translate('Id (in %s)',$tree->name()) ?></th> 
+		<th><?= I18N::translate($bt_name) ?></th>
+		<th class="col-sm-2"><?= I18N::translate('bookDB') ?></th>
+		<th class="col-sm-2"><?= I18N::translate('Id (in %s)',$tree->name()) ?></th> 
 	    </tr>
 	</thead>
 	<tbody>
@@ -190,11 +203,13 @@ if (isset($books)) {
 	$i = 0;
 	foreach($books as $val) {
 	    $tmp = get_object_vars($val);
-	    if ($tmp['nadBTid'] != $oldBTid) {
+	    if ($tmp['nadBTid'] != $oldBTid && $btype == 1) {
 		$oldBTid = $tmp['nadBTid'];
+		$header = $bt[$oldBTid] . "er";
+		$header = str_replace("boker","böcker",$header);
 ?>
 		<tr>
-		    <td colspan="3"><b><?= $bt[$oldBTid] ?></b></td>
+		    <td colspan="3"><b><?= $header ?></b></td>
 		</tr>
 <?php
 	    }
@@ -204,10 +219,19 @@ if (isset($books)) {
 		      ->select('s_id')
 		      ->get();
 
-	    $id = ($tmp['nadBTidSpec'] != 0) ? $tmp['nadBTidSpec'] : $tmp['nadBTid'];
+	    if ($btype == 1) {
+		$id = ($tmp['nadBTidSpec'] != 0) ? $tmp['nadBTidSpec'] : $tmp['nadBTid'];
+	    }
+
+	    $extra = "";
+	    if ($btype == 2) {
+		$id = $tmp['nadBTid'];
+		$extra = ', ' . trim($tmp['nadBKextra']);
+		if ($extra == ', ') { $extra = ''; }
+	    }
 ?>
 		<tr>
-		    <td><?= $bt[$id] . ' ' . $tmp['nadBKperiod'] . ' (' . $tmp['bdbBKsignum'] . ')' ?></td>
+		    <td><?= $bt[$id] . ' ' . $tmp['nadBKperiod'] . ' ' . $tmp['bdbBKsignum'] . $extra ?></td>
 		    <td><?= $tmp['rin'] ?></td>
 <?php
 	    if (count($y) > 0) {
@@ -232,7 +256,9 @@ if (isset($books)) {
     }
 ?>
     <div class="row form-group">
-	<div class="col-sm-12">
+	<div class="col-sm-3">
+	</div>
+	<div class="col-sm-9">
 	  <div class="float-right">
 	    <button type="submit" class="btn btn-primary">
 	        <?= view('icons/save') ?>

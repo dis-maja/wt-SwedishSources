@@ -1,0 +1,186 @@
+<?php
+
+use Fisharebest\Webtrees\I18N;
+use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Database\Query\Expression;
+use Ramsey\Uuid\Uuid;
+
+/**
+ * @vat array		$books
+ * @var string		$subtype
+ * @var <int,string>	$subtypes
+ * @var string		$sbtype
+ * @var <int,string>	$booktype
+ * @var string		$cancel
+ * @var string		$name
+ * @var string		$title
+ * @var Tree		$tree
+ */
+
+    if ($sbtype == "") {
+	if (isset($_REQUEST['sbtype'])) {
+	    $sbtype = $_REQUEST['sbtype'];
+	}
+    }
+
+    if ($subtype == "") {
+	if (isset($_REQUEST['subtype'])) {
+	    $subtype = $_REQUEST['subtype'];
+	}
+    }
+
+?>
+<h2 class="wt-page-title"><?= $title ?></h2>
+
+<form method="POST">
+    <?= csrf_field() ?>
+<?php
+    $SBtypeId = 'sbtype' . Uuid::uuid4()->toString();
+    $SubtypeId = 'subtype' . Uuid::uuid4()->toString();
+
+    if (count($booktype) == 1) {
+?>
+    <input type="hidden" name="btype" value="<?= $sbtype ?>">
+<?php
+    }
+?>
+    <input type="hidden" name="osbtype" value="<?= $sbtype ?>">
+    <div class="row form-group">
+	<label class="col-sm-3 col-form-label" for="<?= $SBtypeId ?>">
+	    <?= I18N::translate('Book type') ?>
+	</label>
+	<div class="col-sm-9">
+<?php
+    if (count($booktype) == 1) {
+	$tmp = array_keys($booktype);
+?>
+	    <input class="form-control" type="text" id="<? $SBtypeId ?>" value="<?= $booktype[$tmp[0]] ?>" disabled>
+<?php
+    } else {
+?>
+	    <select class="form-control select" id)"<?= $SBtypeId ?>" name="sbtype" onchange="this.form.submit()">
+<?php
+	foreach($booktype as $key => $val) {
+	    if ($key == $sbtype) {
+		$tmp = " selected";
+	    } else {
+		$tmp = "";
+	    }
+?>
+		<option value="<?= $key ?>"<?= $tmp ?>><?= $val ?></option>
+<?php
+	}
+?>
+	    </select>
+<?php
+    }    
+?>
+	</div>
+    </div>
+    <input type="hidden" name="osubtype" value="<?= $subtype ?>">
+    <div class="row form-group">
+	<label class="col-sm-3 col-form-label" for="<?= $SBtypeId ?>">
+	    <?= I18N::translate('Subtype') ?>
+	</label>
+	<div class="col-sm-9">
+	    <select class="form-control select" id)"<?= $SubtypeId ?>" name="subtype" onchange="this.form.submit()">
+<?php
+	foreach($subtypes as $key => $val) {
+	    if ($key == $subtype) {
+		$tmp = " selected";
+	    } else {
+		$tmp = "";
+	    }
+?>
+		<option value="<?= $key ?>"<?= $tmp ?>><?= $val ?></option>
+<?php
+	}
+?>
+	    </select>
+	</div>
+    </div>
+<?php
+    if ($subtype != "" AND $subtype != "0") {
+?>
+    <table class="table table-bordered table-sm" style="border-collapse: collapse;">
+	<thead class="thead-light">
+	    <tr>
+		<th><?= I18N::translate($subtypes[$subtype]) ?></th>
+<?php
+	if (in_array($subtype,array("3","4"))) {
+?>
+		<th class="col-sm-1"><?= I18N::translate('Online') ?></th>
+<?php
+	}
+?>
+		<th class="col-sm-1"><?= I18N::translate('bookDB') ?></th>
+		<th class="col-sm-2"><?= I18N::translate('Id (in %s)',$tree->name()) ?></th>
+	    </tr>
+	</thead>
+	<tbody>
+<?php
+	$label = I18N::translate('Add');
+	$i = 0;
+	foreach($books as $val) {
+	    $y = DB::table('sources')
+		      ->where('s_file', '=', $tree->id())
+		      ->where('s_gedcom', 'LIKE', '%RIN ' . $val['rin'] . '%')
+		      ->select('s_id')
+		      ->get();
+?>
+	    <tr>
+<?php
+	    $extra = "";
+	    if (in_array($subtype,array("1","2"))) {
+		if ($val['bdbDBauth'] != "") {
+		    $extra = ", " . $val['bdbDBauth'];
+		}
+	    }
+?>
+		<td><?= $val['bdbDBname'] . $extra ?></td>
+<?php
+	    if (in_array($subtype,array("3","4"))) {
+		$icon = ($val['bdbDBonline']) ? view('icons/save') : view('icons/cancel');
+
+?>
+		<td><?= $icon ?></td>
+<?php
+	    }
+?>
+		<td><?= $val['rin'] ?></td>
+<?php
+	    if (count($y) > 0) {
+?>
+		<td><?= $y[0]->s_id ?></td>
+<?php
+	    } else {
+?>
+		<td><?= view('components/checkbox', ['label' => $label, 'name' => 'sour[' . $i . ']', 'checked' => (bool) 0, 'value' => $val['rin']]) ?></td>
+<?php
+		$i++;
+	    }
+?>
+	    </tr>
+<?php
+	}
+?>
+	</tbody>
+    </table>
+<?php
+    }
+?>
+    <div class="row form-group">
+	<div class="col-sm-3">
+	</div>
+	<div class="col-sm-9">
+	    <button type="submit" class="btn btn-primary">
+	        <?= view('icons/save') ?>
+                <?= I18N::translate('save') ?>
+   	    </button>
+            <a class="btn btn-secondary" href="<?= e($cancel) ?>">
+                <?= view('icons/cancel') ?>
+                <?= I18N::translate('cancel') ?>
+            </a>
+	</div>
+    </div>
+</form>

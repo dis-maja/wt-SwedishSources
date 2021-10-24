@@ -60,9 +60,10 @@ use Illuminate\Database\Query\Expression;
 	      TAB_BOOKTYPE	=> I18N::translate('Book type'),
 	      TAB_WEBSERVICE	=> I18N::translate('Webservice') ];
 
-    $booktypes = [ 0 => 'Choose book type',
+    $booktypes = [ 0 => '&lt;select&gt;',
     		   1 => 'Church books',
 		   2 => 'SCB Extracts from Church Books 1860-1949',
+		   3 => 'Databases and books',
 		 ];
 
     if ($admin == true) {
@@ -90,7 +91,10 @@ use Illuminate\Database\Query\Expression;
 	    $tree_id = $tree->id();
 	}
 
-	$tree_names[0] = I18N::translate('Choose Family tree');
+	$tree_names[0] =
+	    str_replace(array('&lt;','&gt;'),
+			array('<','>'),
+			I18N::translate('&lt;select&gt;'));
 	foreach($trees as $t) {
 	    $tree_names[$t->id()] = $t->name();
 	    $tree = $t;
