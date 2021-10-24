@@ -48,11 +48,17 @@ Class SwedishSourcesBtypeAction implements RequestHandlerInterface
 	$tree = $request->getAttribute('tree');
 	assert($tree instanceof Tree);
 
+	$btype = $request->getAttribute('btype');
+
 	$params = (array) $request->getParsedBody();
 
 	if ($params['btype'] == "0") {
 	    $url = route(SwedishSourcesBtypePage::class,
 			 ['tree' => $tree->name()]);
+	} elseif ($params['btype'] == "3") {
+	    $url = route(SwedishSourcesSubBtypePage::class,
+			 ['tree' => $tree->name(),
+			  'sbtype' => $params['btype']]);
 	} else {
 	    $url = route(SwedishSourcesCountyPage::class,
 			 ['tree' => $tree->name(),

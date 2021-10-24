@@ -66,6 +66,7 @@ class SwedishSourcesBtypePage implements RequestHandlerInterface
 		    ->where('type', "=", 'BTYPE')
 		    ->where('nothidden', "=", 1)
 		    ->select(['rin', 'info'])
+		    ->orderBy('rin', 'asc')
 		    ->get();
 
 	$booktype = array();

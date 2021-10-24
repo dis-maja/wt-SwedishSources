@@ -65,6 +65,7 @@ class SwedishSourcesParishPage implements RequestHandlerInterface
 		    ->where('type', "=", 'BTYPE')
 		    ->where('nothidden', "=", 1)
 		    ->select(['rin', 'info'])
+		    ->orderBy('rin', 'asc')
 		    ->get();
 
 	$booktype = array();
@@ -80,7 +81,7 @@ class SwedishSourcesParishPage implements RequestHandlerInterface
 		    ->get();
 
 	$counties = [
-	    0 => I18N::translate('Choose county'),
+	    0 => I18N::translate('&lt;select;&gt>'),
 	];	
 	foreach($tmp as $value) {
 	    $counties[$value->rin] = $value->info;
@@ -93,7 +94,7 @@ class SwedishSourcesParishPage implements RequestHandlerInterface
 	$tmp = json_decode($this->curlGet($url . '?do=getArchive&CID=' . $county, $user, $pass));
 
 	$parishes = [
-	    0 => I18N::translate('Choose parish'),
+	    0 => I18N::translate('&lt;select&gt;'),
 	];
 	foreach($tmp as $value) {
 	    $parishes[$value->bdbACid] = $value->bdbACname;

@@ -66,6 +66,7 @@ class SwedishSourcesBooksPage implements RequestHandlerInterface
 		    ->where('type', "=", 'BTYPE')
 		    ->where('nothidden', "=", 1)
 		    ->select(['rin', 'info'])
+		    ->orderBy('rin', 'asc')
 		    ->get();
 
 	$booktype = array();
@@ -81,7 +82,7 @@ class SwedishSourcesBooksPage implements RequestHandlerInterface
 		    ->get();
 
 	$counties = [
-	    0 => I18N::translate('Choose county'),
+	    0 => I18N::translate('&lt;select&gt;'),
 	];	
 	foreach($tmp as $value) {
 	    $counties[$value->rin] = $value->info;
@@ -91,18 +92,32 @@ class SwedishSourcesBooksPage implements RequestHandlerInterface
 	$pass = $this->getPreference($name, 'PASS','');
 	$url  = $this->getPreference($name, 'URL','');
 
-	$tmp = json_decode($this->curlGet($url . '?do=getArchive&CID=' . $county, $user, $pass));
+	if ($btype == 1) {
 
-	$parishes = [
-	    0 => I18N::translate('Choose parish'),
-	];
-	foreach($tmp as $value) {
-	    $parishes[$value->bdbACid] = $value->bdbACname;
+	    $tmp = json_decode($this->curlGet($url . '?do=getArchive&CID=' . $county, $user, $pass));
+
+	    $parishes = [
+		0 => I18N::translate('&lt;select&gt;'),
+	    ];
+	    foreach($tmp as $value) {
+		$parishes[$value->bdbACid] = $value->bdbACname;
+	    }
+
+	    $books = json_decode($this->curlGet($url . '?do=getBook&AID=' . $parish, $user, $pass));
+
+	    $btypes = json_decode($this->curlGet($url . '?do=getBookType&AID=' . $parish, $user, $pass));
+
 	}
 
-	$books = json_decode($this->curlGet($url . '?do=getBook&AID=' . $parish, $user, $pass));
+	if ($btype == 2) {
 
-	$btypes = json_decode($this->curlGet($url . '?do=getBookType&AID=' . $parish, $user, $pass));
+	    $parishes = array();
+
+	    $books = json_decode($this->curlGet($url . '?do=getSCBBooks&CID=' . $county, $user, $pass));
+
+	    $btypes = json_decode($this->curlGet($url . '?do=getSCBBookTypes', $user, $pass));
+
+	}
 
 	return $this->viewResponse($name . '::add-swedish-source', [
 	    'tree'	=> $tree,

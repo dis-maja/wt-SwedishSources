@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace DISMaja\Webtrees\Module\SwedishSources\Http;
 
+use Fisharebest\Webtrees\FlashMessages;
 use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Functions\FunctionsImport;
 use Psr\Http\Message\ResponseInterface;
@@ -57,6 +58,10 @@ class SwedishSourcesParishAction implements RequestHandlerInterface
 	    if ($btype == "0") {
 		$url = route(SwedishSourceBtype::class,
 			     ['tree' => $tree->name()]);
+	    } elseif ($params['btype'] == "3") {
+		$url = route(SwedishSourcesSubBtypePage::class,
+			     ['tree' => $tree->name(),
+			      'sbtype' => $params['btype']]);
 	    } else {
 		$url = route(SwedishSourcesCountyPage::class,
 			     ['tree' => $tree->name(),

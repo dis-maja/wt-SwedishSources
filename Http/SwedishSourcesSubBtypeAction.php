@@ -37,7 +37,7 @@ use function route;
 /**
  * Create a new Swedish source.
  */
-class SwedishSourcesBooksAction implements RequestHandlerInterface
+class SwedishSourcesSubBtypeAction implements RequestHandlerInterface
 {
 
     /**
@@ -50,9 +50,8 @@ class SwedishSourcesBooksAction implements RequestHandlerInterface
 	$tree = $request->getAttribute('tree');
 	assert($tree instanceof Tree);
 
-	$btype = $request->getAttribute('btype');
-	$county = $request->getAttribute('county');
-	$parish = $request->getAttribute('parish');
+	$sbtype = $request->getAttribute('sbtype');
+	$subtype = $request->getAttribute('subtype');
 
 	$params = (array) $request->getParsedBody();
 
@@ -81,49 +80,32 @@ class SwedishSourcesBooksAction implements RequestHandlerInterface
 
 	$url = "";
 
-	if ($params['btype'] != $params['obtype']) {
-	    if ($btype == "0") {
+	if ($params['sbtype'] != $params['osbtype']) {
+	    if ($sbtype == "0") {
 		$url = route(SwedishSourcesBtypePage::class,
 			     ['tree' => $tree->name()]);
-	    } elseif ($params['btype'] == "3") {
+	    } elseif ($sbtype == "3") {
 		$url = route(SwedishSourcesSubBtypePage::class,
 			     ['tree' => $tree->name(),
-			      'sbtype' => $params['btype']]);
+			      'sbtype' => $params['sbtype']]);
 	    } else {
 		$url = route(SwedishSourcesCountyPage::class,
 			     ['tree' => $tree->name(),
-			      'btype' => $params['btype']]);
+			      'btype' => $params['sbtype']]);
 	    }
 	}
 
-	if ($url == "") {
-	    if ($params['county'] != $params['ocounty']) {
-		if ($county == "0") {
-		    $url = route(SwedishSourcesCountyPage::class,
+	if ($url == "" AND isset($params['subtype'])) {
+	    if ($params['subtype'] != $params['osubtype']) {
+		if ($subtype == "0") {
+		    $url = route(SwedishSourcesSubBtypePage::class,
 				 ['tree' => $tree->name(),
-				  'btype' => $btype]);
+				  'sbtype' => $params['sbtype']]);
 		} else {
-		    $url = route(SwedishSourcesParishPage::class,
+		    $url = route(SwedishSourcesSubBtypePage::class,
 				 ['tree' => $tree->name(),
-				  'btype' => $btype,
-				  'county' => $params['county']]);
-		}
-	    }
-	}
-	
-	if ($url == "") {
-	    if ($params['parish'] != $params['oparish']) {
-		if ($parish == "0") {
-		    $url = route(SwedishSourcesParishPage::class,
-				 ['tree' => $tree->name(),
-				  'btype' => $btype,
-				  'county' => $county]);
-		} else {
-		    $url = route(SwedishSourcesBooksPage::class,
-				 ['tree' => $tree->name(),
-				  'btype' => $btype,
-				  'county' => $county,
-				  'parish' => $params['parish']]);
+				  'sbtype' => $params['sbtype'],
+				  'subtype' => $params['subtype']]);
 		}
 	    }
 	}
@@ -136,11 +118,7 @@ class SwedishSourcesBooksAction implements RequestHandlerInterface
 
 	    if (isset($params['sour']) AND is_array($params['sour'])) {
 		foreach($params['sour'] as $val) {
-		    if ($params['parish'] == "scb") {
-			$src = $this->curlGet($xurl . '?do=gcSOURSCB&RIN=' . $val, $user, $pass);
-		    } else {
-			$src = $this->curlGet($xurl . '?do=gcSOUR&RIN=' . $val, $user, $pass);
-		    }
+		    $src = $this->curlGet($xurl . '?do=gcSOURDB&RIN=' . $val, $user, $pass);
 		    $src = str_replace($repo_from, $repo_to, $src);
 
 		    $rest = json_decode($src);
@@ -178,13 +156,13 @@ class SwedishSourcesBooksAction implements RequestHandlerInterface
 
 		    $record = $tree->createRecord($gedcom);
 
+#		    FlashMessages::addMessage(serialize($params), 'success');
 		    FlashMessages::addMessage(I18N::translate('Created the source "%s" as %s', $name, $record->xref()), 'success');
 		}
-		$url = route(SwedishSourcesBooksPage::class,
+		$url = route(SwedishSourcesSubBtypePage::class,
 			     ['tree' => $tree->name(),
-			      'btype' => $btype,
-			      'county' => $county,
-			      'parish' => $params['parish']]);
+			      'sbtype' => $params['sbtype'],
+			      'subtype' => $params['subtype']]);
 	    }
 	}
 
