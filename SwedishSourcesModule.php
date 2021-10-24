@@ -47,6 +47,8 @@ use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesParishPage;
 use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesParishAction;
 use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesBooksPage;
 use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesBooksAction;
+use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesSubBtypePage;
+use DISMaja\Webtrees\Module\SwedishSources\Http\SwedishSourcesSubBtypeAction;
 use Fisharebest\Localization\Translation;
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\FlashMessages;
@@ -94,6 +96,7 @@ class SwedishSourcesModule extends AbstractModule implements
     public const BOOKTYPE_UNKNOWN = 0;
     public const BOOKTYPE_CHURCH_BOOKS = 1;
     public const BOOKTYPE_SCB = 2;
+    public const BOOKTYPE_DBS_AND_BOOKS = 3;
 
     /**
      * Constructor.  The constructor is called on *all* modules, even ones that are disabled.
@@ -123,10 +126,6 @@ class SwedishSourcesModule extends AbstractModule implements
 	assert($router_container instanceof RouterContainer);
 	$router = $router_container->getMap();
 
-#	$router->get(SwedishSourcesPage::class,
-#			'/tree/{tree}/swedish-sources');
-#	$router->post(SwedishSourcesAction::class,
-#			'/tree/{tree}/swedish-sources');
 	$router->get(SwedishSourcesBtypePage::class,
 			'/tree/{tree}/swedish-sources');
 	$router->post(SwedishSourcesBtypeAction::class,
@@ -135,6 +134,10 @@ class SwedishSourcesModule extends AbstractModule implements
 			'/tree/{tree}/swedish-sources/btype/{btype}');
 	$router->post(SwedishSourcesCountyAction::class,
 			'/tree/{tree}/swedish-sources/btype/{btype}');
+	$router->get(SwedishSourcesSubBtypePage::class,
+			'/tree/{tree}/swedish-sources/sbtype/{btype}');
+	$router->post(SwedishSourcesSubBtypeAction::class,
+			'/tree/{tree}/swedish-sources/sbtype/{btype}');
 	$router->get(SwedishSourcesParishPage::class,
 			'/tree/{tree}/swedish-sources/btype/{btype}/county/{county}');
 	$router->post(SwedishSourcesParishAction::class,
@@ -199,7 +202,7 @@ class SwedishSourcesModule extends AbstractModule implements
      */
     public function customModuleVersion(): string
     {
-        return '2.0.1';
+        return '2.0.2';
     }
 
     /**
@@ -399,7 +402,7 @@ class SwedishSourcesModule extends AbstractModule implements
 	    $record = $tmpTree->createRecord($gedcom);
 	    $record = Registry::repositoryFactory()->new($record->xref(), $record->gedcom(), null, $tmpTree);
 
-	    $str = I18N::translate('Created repository %s as %s', $name, $record->xref());
+	    $str = I18N::translate('Created the repository "%s" as %s', $name, $record->xref());
 	    FlashMessages::addMessage($str, 'success');
 
 	}
@@ -427,7 +430,7 @@ class SwedishSourcesModule extends AbstractModule implements
 				 'nothidden' => $county->bdbCTok,
 				 'info' => $county->bdbCTname ]);
 
-	    $str = I18N::translate('Created county %s as %s', $county->bdbCTname, $county->bdbCTid);
+	    $str = I18N::translate('Created the county "%s" as %s', $county->bdbCTname, $county->bdbCTid);
 	    FlashMessages::addMessage($str, 'success');
 
 	}
@@ -448,7 +451,7 @@ class SwedishSourcesModule extends AbstractModule implements
 			     'nothidden' => 0,
 			     'info' => $info ]);
 
-	$str = I18N::translate('Created booktype "%s" as %s',
+	$str = I18N::translate('Created the booktype "%s" as %s',
 				I18N::translate($info), $rin);
 	FlashMessages::addMessage($str, 'success');
     }
@@ -508,20 +511,25 @@ class SwedishSourcesModule extends AbstractModule implements
 	    'Add repository' => 'Lägg till arkiv',
 	    'Add swedish source' => 'Lägg till svensk källa',
 	    'Book type' => 'Boktyp',
-	    'bookDB RIN' => 'bookDB RIN',
+	    'bookDB' => 'bookDB',
 	    'Change' => 'Ändra',
-	    'Choose book type' => 'Välj boktyp',
-	    'Choose county' => 'Välj län',
-	    'Choose parish' => 'Välj församling',
 	    'Church books' => 'Kyrkböcker',
 	    'County' => 'Län',
 	    'Create a Swedish source' => 'Skapa en svensk källa',
-	    'Created county %s as %s' => 'Skapade län %s som %s',
-	    'Created repository %s as %s' => 'Skapade arkiv %s som %s',
+	    'Created the county "%s" as %s' => 'Skapade länet "%s" som %s',
+	    'Created the repository "%s" as %s' => 'Skapade arkivet "%s" som %s',
+	    'Created the source "%s" as %s' => 'Skapade källan "%s" som %s',
+	    'Databases and books' => 'Databaser och böcker',
+	    'Encyclopedias' => 'Uppslagsverk',
+	    'Herdaminnen' => 'Herdaminnen',
 	    'Id (in %s)' => 'Id (i %s)',
+	    'Local databases' => 'Lokala databaser',
+	    'Online databases' => 'Online databaser',
 	    'Parish' => 'Församling',
+	    'SCB Extracts' => 'SCB utdrag',
 	    'SCB Extracts from Church Books 1860-1949' =>
-	        'SCB utdrag frön kyrkböcker 1860-1949',	
+	        'SCB utdrag från kyrkböcker 1860-1949',	
+	    'Subtype' => 'Undertyp',
 	    'Swedish Sources' => 'Svenska källor',
 
 	];
