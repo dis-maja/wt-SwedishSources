@@ -112,9 +112,9 @@ class SwedishSourcesSubBtypeAction implements RequestHandlerInterface
 	
 	if ($url == "") {
 
-	    $user = $this->getPreference($name, 'USER','');
-	    $pass = $this->getPreference($name, 'PASS','');
-	    $xurl  = $this->getPreference($name, 'URL','');
+	    $user = $this->getPref($tree->id(), 'USER','');
+	    $pass = $this->getPref($tree->id(), 'PASS','');
+	    $xurl  = $this->getPref($tree->id(), 'URL','');
 
 	    if (isset($params['sour']) AND is_array($params['sour'])) {
 		foreach($params['sour'] as $val) {
@@ -191,12 +191,12 @@ class SwedishSourcesSubBtypeAction implements RequestHandlerInterface
 
     }
 
-    private function getPreference(string $name, string $setting_name, string $default = ''): string
+    private function getPref(int $tree_id, string $setting_name, string $default = ''): string
     {
-	return DB::table('module_setting')
-	    ->where('module_name', '=', $name)
-	    ->where('setting_name', '=', $setting_name)
-	    ->value('setting_value') ?? $default;
+	return DB::table('swedish_sources')
+	    ->where('gid', '=', $tree_id)
+	    ->where('type', '=', $setting_name)
+	    ->value('info') ?? $default;
     }
 }
 

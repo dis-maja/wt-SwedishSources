@@ -79,9 +79,9 @@ class SwedishSourcesSubBtypePage implements RequestHandlerInterface
 	    $booktype[$value->rin] = I18N::translate($value->info);
 	}
 	
-	$user = $this->getPreference($name, 'USER','');
-	$pass = $this->getPreference($name, 'PASS','');
-	$url  = $this->getPreference($name, 'URL','');
+	$user = $this->getPref($tree->id(), 'USER','');
+	$pass = $this->getPref($tree->id(), 'PASS','');
+	$url  = $this->getPref($tree->id(), 'URL','');
 
 	$tmp = json_decode($this->curlGet($url . '?do=getDBtypes', $user, $pass));
 
@@ -134,11 +134,11 @@ class SwedishSourcesSubBtypePage implements RequestHandlerInterface
 
     }
 
-    private function getPreference(string $name, string $setting_name, string $default = ''): string
+    private function getPref(int $tree_id, string $setting_name, string $default = ''): string
     {
-	return DB::table('module_setting')
-	    ->where('module_name', '=', $name)
-	    ->where('setting_name', '=', $setting_name)
-	    ->value('setting_value') ?? $default;
+	return DB::table('swedish_sources')
+	    ->where('gid', '=', $tree_id)
+	    ->where('type', '=', $setting_name)
+	    ->value('info') ?? $default;
     }
 }
