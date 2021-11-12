@@ -132,8 +132,11 @@ use Ramsey\Uuid\Uuid;
 <?php
 	    $extra = "";
 	    if (in_array($subtype,array("1","2"))) {
+	        if ($val['bdbDBver'] != "") {
+		    $extra .= ", ver " . $val['bdbDBver'];
+		}
 		if ($val['bdbDBauth'] != "") {
-		    $extra = ", " . $val['bdbDBauth'];
+		    $extra .= ", " . $val['bdbDBauth'];
 		}
 	    }
 ?>

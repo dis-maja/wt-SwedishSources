@@ -74,12 +74,6 @@ use Illuminate\Database\Query\Expression;
 <?php
     }
 
-    $user = trim(getPreference($module, 'USER', ''));
-    $pass = trim(getPreference($module, 'PASS', ''));
-    $url  = trim(getPreference($module, 'URL', ''));
-
-    $force = ($user == '' || $pass == '' || $url == '');
-
     if ($admin == true) {
 
 	if ($tree == null) {
@@ -128,6 +122,12 @@ use Illuminate\Database\Query\Expression;
     if ($tree_id == 0) {
 	return;
     }
+
+    $user = trim(getPref($tree_id, 'USER', ''));
+    $pass = trim(getPref($tree_id, 'PASS', ''));
+    $url  = trim(getPref($tree_id, 'URL', ''));
+
+    $force = ($user == '' || $pass == '' || $url == '');
 
     if ($force) {
 	$ftabs = [ TAB_WEBSERVICE => $tabs[TAB_WEBSERVICE] ];
@@ -280,11 +280,11 @@ use Illuminate\Database\Query\Expression;
 
     }
 
-    function getPreference(string $name, string $setting_name, string $default = ''): string
+    function getPref(string $tree_id, string $setting_name, string $default = ''): string
     {
-	return DB::table('module_setting')
-	    ->where('module_name', '=', $name)
-	    ->where('setting_name', '=', $setting_name)
-	    ->value('setting_value') ?? $default;
+	return DB::table('swedish_sources')
+	    ->where('gid', '=', $tree_id)
+	    ->where('type', '=', $setting_name)
+	    ->value('info') ?? $default;
     }
 
