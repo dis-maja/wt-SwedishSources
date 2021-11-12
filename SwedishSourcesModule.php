@@ -93,6 +93,9 @@ class SwedishSourcesModule extends AbstractModule implements
 
     private $migration_service;
 
+    /** @var string[] Cached copy of the wt_gedcom_setting table. */
+    private $preferences = [];
+
     public const BOOKTYPE_UNKNOWN = 0;
     public const BOOKTYPE_CHURCH_BOOKS = 1;
     public const BOOKTYPE_SCB = 2;
@@ -152,7 +155,7 @@ class SwedishSourcesModule extends AbstractModule implements
 
 	$this->migration_service
 	    ->updateSchema('DISMaja\Webtrees\Module\SwedishSources\Schema',
-			   'SWESRC_SCHEMA_VERSION', 1);
+			   'SWESRC_SCHEMA_VERSION', 2);
     }
 
     /**
@@ -202,7 +205,7 @@ class SwedishSourcesModule extends AbstractModule implements
      */
     public function customModuleVersion(): string
     {
-        return '2.0.2';
+        return '2.0.3';
     }
 
     /**
@@ -340,13 +343,13 @@ class SwedishSourcesModule extends AbstractModule implements
 	if ($tab == '4' AND $save == '1') {
 	    // Update Webservice
 	    if ($_REQUEST['user'] != $_REQUEST['ouser']) {
-		$this->setPreference('USER', $_REQUEST['user']);
+		$this->setPref($params['tree'], 'USER', $_REQUEST['user']);
 	    }
 	    if ($_REQUEST['pass'] != $_REQUEST['opass']) {
-		$this->setPreference('PASS', $_REQUEST['pass']);
+		$this->setPref($params['tree'], 'PASS', $_REQUEST['pass']);
 	    }
 	    if ($_REQUEST['url'] != $_REQUEST['ourl']) {
-		$this->setPreference('URL', $_REQUEST['url']);
+		$this->setPref($params['tree'], 'URL', $_REQUEST['url']);
 	    }
 	    return redirect(route('module', [
 				   'module' => $this->name(),
@@ -361,12 +364,38 @@ class SwedishSourcesModule extends AbstractModule implements
 				'action' => 'Admin']));
     }
 
+    public function setPref(string $tree_id, string $setting_name,
+			    string $setting_value): void
+    {
+	if ($setting_value !== $this->getPref($tree_id, $setting_name)) {
+	    DB::table('swedish_sources')->updateOrInsert([
+		'gid'		=> $tree_id,
+		'type'		=> $setting_name,
+	    ],[
+		'rin'		=> '',
+		'nothidden'	=> 1,
+		'info'		=> $setting_value,
+	    ]);
+	}
+    }
+
+    public function getPref(string $tree_id, string $setting_name,
+			    string $default = ''): string
+    {
+	$preferences = DB::table('swedish_sources')
+	    ->where('gid', '=', $tree_id)
+	    ->pluck('info', 'type')
+	    ->all();
+
+	return $preferences[$setting_name] ?? $default;
+    }
+
     private function addREPO(string $tree_id, string $rin): void
     {
 
-	$user = $this->getPreference('USER','');
-	$pass = $this->getPreference('PASS','');
-	$url  = $this->getPreference('URL','');
+	$user = $this->getPref($tree_id,'USER','');
+	$pass = $this->getPref($tree_id,'PASS','');
+	$url  = $this->getPref($tree_id,'URL','');
 
 	$tmpTree = new Tree((int) $tree_id, '', '');
 	
@@ -411,9 +440,9 @@ class SwedishSourcesModule extends AbstractModule implements
     private function addCOUNTY(string $tree_id, string $rin): void
     {
 
-	$user = $this->getPreference('USER','');
-	$pass = $this->getPreference('PASS','');
-	$url  = $this->getPreference('URL','');
+	$user = $this->getPref($tree_id,'USER','');
+	$pass = $this->getPref($tree_id,'PASS','');
+	$url  = $this->getPref($tree_id,'URL','');
 
 #	$tmpTree = new Tree((int) $tree_id, '', '');
 	
@@ -440,9 +469,9 @@ class SwedishSourcesModule extends AbstractModule implements
     private function addBTYPE(string $tree_id, string $rin, string $info): void
     {
 
-	$user = $this->getPreference('USER','');
-	$pass = $this->getPreference('PASS','');
-	$url  = $this->getPreference('URL','');
+	$user = $this->getPref($tree_id,'USER','');
+	$pass = $this->getPref($tree_id,'PASS','');
+	$url  = $this->getPref($tree_id,'URL','');
 
 	$y = DB::table('swedish_sources')
 		  ->insert([ 'gid' => $tree_id,
@@ -459,9 +488,9 @@ class SwedishSourcesModule extends AbstractModule implements
     private function updateBTYPE(string $tree_id, string $id): void
     {
 
-	$user = $this->getPreference('USER','');
-	$pass = $this->getPreference('PASS','');
-	$url  = $this->getPreference('URL','');
+	$user = $this->getPref($tree_id,'USER','');
+	$pass = $this->getPref($tree_id,'PASS','');
+	$url  = $this->getPref($tree_id,'URL','');
 
 	$y = DB::table('swedish_sources')
 		  ->where('gid', "=", $tree_id)
@@ -625,22 +654,22 @@ class SwedishSourcesModule extends AbstractModule implements
 	    $params['manager'] == 1) {
 
 	    if ($params['user'] != $params['ouser']) {
-		$this->setPreference('USER', $params['user']);
+		$this->setPreference($tree,'USER', $params['user']);
 	    }
 
 	    if ($params['pass'] != $params['opass']) {
-		$this->setPreference('PASS', $params['pass']);
+		$this->setPreference($tree,'PASS', $params['pass']);
 	    }
 
 	    if ($params['url'] != $params['ourl']) {
-		$this->setPreference('URL', $params['url']);
+		$this->setPreference($tree,'URL', $params['url']);
 	    }
 
 	}
 
-	$user = $this->getPreference('USER','');
-	$pass = $this->getPreference('PASS','');
-	$url  = $this->getPreference('URL','');
+	$user = $this->getPref($tree,'USER','');
+	$pass = $this->getPref($tree,'PASS','');
+	$url  = $this->getPref($tree,'URL','');
 
 	if (isset($params['county']) AND
 	    is_array($params['county'])) {
@@ -735,79 +764,10 @@ class SwedishSourcesModule extends AbstractModule implements
     /**
      * @return string
      */
-    public function getBtypeSetting(): string
-    {
-	return $this->getPreference('BTYPE','');
-    }
-
-    /**
-     * @return string
-     */
     public function getModuleName(): string
     {
 	$tmp = explode('/',__DIR__);
 	return '_' . $tmp[count($tmp)-2] . '_';
-    }
-
-    /**
-     * @return array<int,string>
-     */
-    public function getBookTypesFiltered(): array
-    {
-	$bt = array();
-
-	$booktypes = $this->getBookTypes();
-
-	$setting = trim(',' . $this->getBtypeSetting() . ',');
-	foreach(explode(',',$setting) as $val) {
-	    if (trim($val) == '') continue;
-	    foreach($booktype as $v) {
-		if (trim($val) == $v[0]) {
-		    if (!in_array($v[0], $bt)) {
-			$bt[] = $v[0];
-		    }
-		}
-	    }
-	}
-
-	sort($bt);
-
-	if ((count($bt) == 1) AND $bt[0] != '0') {
-	    foreach($booktype as $v) {
-		if ($bt[0] == $v[0]) {
-		    return $v;
-		}
-	    }
-	}
-
-	$i = 0;
-	foreach($bt as $val) {
-	    if ($val == 0) { $i++; }
-	}
-	if ((count($bt) - $i) == 1) {
-	    foreach($bt as $val) {
-		if ($val == 0) { continue; }
-		foreach($booktype as $v) {
-		    if ($val == $v[0]) {
-			return $v;
-		    }
-		}
-	    }
-	}
-	
-	if (count($bt) > 1 AND !in_array('0',$bt)) {
-	    $bt[] = '0';
-	    sort($bt);
-	}
-
-	$tmp = array();
-	foreach($booktype as $v) {
-	    if (in_array($v[0], $bt)) {
-		$tmp[] = $v;
-	    }
-	}
-	return $tmp;
-
     }
 
     /**
