@@ -75,8 +75,10 @@ class SwedishSourcesBooksAction implements RequestHandlerInterface
 		    $i = $k;
 		}
 	    }
-	    $repo_from[] = '@' . trim(str_replace('1 RIN ','', $tmp[$i])) . '@';
-	    $repo_to[] = '@' . trim($val->o_id) . '@';
+	    if ($i !== -1) {
+		$repo_from[] = '@' . trim(str_replace('1 RIN ','', $tmp[$i])) . '@';
+		$repo_to[] = '@' . trim($val->o_id) . '@';
+	    }
 	}
 
 	$url = "";
