@@ -205,7 +205,7 @@ class SwedishSourcesModule extends AbstractModule implements
      */
     public function customModuleVersion(): string
     {
-        return '2.0.3';
+        return '2.0.4';
     }
 
     /**
