@@ -155,7 +155,7 @@ class SwedishSourcesModule extends AbstractModule implements
 
 	$this->migration_service
 	    ->updateSchema('DISMaja\Webtrees\Module\SwedishSources\Schema',
-			   'SWESRC_SCHEMA_VERSION', 2);
+			   'SWESRC_SCHEMA_VERSION', 1);
     }
 
     /**
@@ -205,7 +205,7 @@ class SwedishSourcesModule extends AbstractModule implements
      */
     public function customModuleVersion(): string
     {
-        return '2.0.4';
+        return '2.0.5';
     }
 
     /**
